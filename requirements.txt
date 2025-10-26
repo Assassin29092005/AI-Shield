@@ -1,0 +1,25 @@
+# Core numerical and audio
+sounddevice>=0.4.6
+numpy>=1.20
+
+# Computer vision / ML
+opencv-python>=4.5
+ultralytics>=8.0
+
+# PyTorch (required by many YOLO/vision models)
+# Note: choose CPU or GPU wheel appropriate for your system. This is a broad minimum.
+torch>=1.12
+torchvision>=0.13
+
+# Face/landmark/analysis
+insightface>=0.7
+onnxruntime>=1.14
+mediapipe>=0.10
+
+# Websockets server used by the project
+websockets>=10.0
+
+# Utilities
+pillow>=9.0
+scipy>=1.7
+typing-extensions>=4.0
