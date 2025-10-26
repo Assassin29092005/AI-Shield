@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Proctoring</title>
+    <style>
+        /* --- General Layout & Font --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            display: flex;
+            width: 100%;
+        }
+
+        /* --- Main Content (Video) --- */
+        .main-content {
+            flex-grow: 1;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            /* 16:9 Aspect Ratio */
+            padding-top: 56.25%;
+        }
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror view */
+        }
+        .controls {
+            margin-top: 1rem;
+        }
+        .control-button {
+            font-size: 1rem;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #btn-start {
+            background-color: #27ae60;
+            color: white;
+        }
+        #btn-start:disabled {
+            background-color: #95a5a6;
+        }
+        #btn-start:hover:not(:disabled) {
+            background-color: #2ecc71;
+        }
+        #btn-end {
+            background-color: #c0392b;
+            color: white;
+        }
+        #btn-end:disabled {
+            background-color: #95a5a6;
+        }
+        #btn-end:hover:not(:disabled) {
+            background-color: #e74c3c;
+        }
+        
+        /* --- Sidebar (Status & Log) --- */
+        .sidebar {
+            width: 350px;
+            flex-shrink: 0;
+            background: #ffffff;
+            border-left: 1px solid #dfe4ea;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.05);
+            height: 100vh;
+            box-sizing: border-box; /* Include padding in height */
+        }
+        .sidebar h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #f0f2f5;
+            padding-bottom: 0.5rem;
+        }
+        .status-box {
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .status-box-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            padding: 0.5rem 0;
+        }
+        .status-box-item strong {
+            color: #555;
+        }
+        #connection-status {
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        #connection-status::before {
+            content: '●';
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 1.2rem;
+            color: #e74c3c; /* Red (Disconnected) */
+        }
+        #connection-status.connected {
+            color: #27ae60;
+        }
+        #connection-status.connected::before {
+            color: #27ae60; /* Green (Connected) */
+        }
+
+        /* --- Focus Score Styles --- */
+        #focus-score {
+            font-size: 1.1rem;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .score-focused {
+            color: #27ae60;
+            background-color: #eaf8f0;
+        }
+        .score-distracted {
+            color: #f39c12;
+            background-color: #fef8e7;
+        }
+        .score-away {
+            color: #c0392b;
+            background-color: #f9ebea;
+        }
+        
+        /* --- New Warning Counter Styles --- */
+        #warning-count {
+            font-weight: bold;
+            color: #555; /* Default color */
+            transition: color 0.3s ease;
+            font-size: 1.1rem;
+            padding: 4px 8px;
+        }
+        #warning-count.warning-active {
+            color: #F39C12; /* Orange for warnings 1-2 */
+        }
+        #warning-count.warning-critical {
+            color: #E74C3C; /* Red for warnings 3-5 */
+        }
+        /* --- End New Styles --- */
+
+        /* --- Event Log --- */
+        .event-log-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent container from overflowing */
+        }
+        .event-log-container h3 {
+            margin-bottom: 0.5rem;
+        }
+        #event-log {
+            flex-grow: 1;
+            background: #fdfdfd;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+        .log-entry {
+            display: flex;
+            align-items: flex-start;
+            padding: 0.75rem;
+            border-bottom: 1px solid #f0f2f5;
+            font-size: 0.9rem;
+            animation: fadeIn 0.3s ease;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .log-icon {
+            font-size: 1.2rem;
+            margin-right: 0.75rem;
+            margin-top: 2px;
+        }
+        .log-content {
+            flex-grow: 1;
+        }
+        .log-content strong {
+            display: block;
+            color: #333;
+        }
+        .log-content span {
+            color: #555;
+            font-size: 0.85rem;
+        }
+        .log-time {
+            font-size: 0.8rem;
+            color: #95a5a6;
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+        }
+        /* Log Event Levels */
+        .log-info strong { color: #2980b9; }
+        .log-success strong { color: #27ae60; }
+        .log-warning strong { color: #f39c12; }
+        .log-error strong { color: #c0392b; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Main content area for video feed -->
+        <div class="main-content">
+            <h1>Proctoring Session</h1>
+            <div class="video-container">
+                <video id="webcam" autoplay playsinline muted></video>
+            </div>
+            <div class="controls">
+                <button id="btn-start" class="control-button">Start Session</button>
+                <button id="btn-end" class="control-button" disabled>End Test</button>
+            </div>
+        </div>
+
+        <!-- Sidebar for status and event log -->
+        <div class="sidebar">
+            <h2>Session Status</h2>
+            <div class="status-box">
+                <div class="status-box-item">
+                    <strong>Connection:</strong>
+                    <span id="connection-status">Disconnected</span>
+                </div>
+                <div class="status-box-item">
+                    <strong>Focus Score:</strong>
+                    <span id="focus-score" class="score-focused">---</span>
+                </div>
+                <div class="status-box-item">
+                    <strong>Warnings:</strong>
+                    <span id="warning-count">0 / 5</span>
+                </div>
+            </div>
+            <div class="event-log-container">
+                <h3>Event Log</h3>
+                <div id="event-log">
+                    <!-- Events will be added here by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const WEBSOCKET_URL = "ws://localhost:8765";
+        
+        // --- Element Refs ---
+        const video = document.getElementById('webcam');
+        const btnStart = document.getElementById('btn-start');
+        const btnEnd = document.getElementById('btn-end');
+        const statusEl = document.getElementById('connection-status');
+        const log = document.getElementById('event-log');
+        const scoreEl = document.getElementById('focus-score');
+        const warningCountEl = document.getElementById('warning-count');
+
+        // --- State ---
+        let socket = null;
+        let proctoringInterval = null;
+        let localStream = null;
+        let alertCounter = 0;
+        let isAlertCooldown = false;
+
+        // --- Button Handlers ---
+        btnStart.addEventListener('click', startSession);
+        btnEnd.addEventListener('click', () => endSession(true)); // true = graceful end
+
+        async function startSession() {
+            if (socket || localStream) {
+                console.log("Session already running.");
+                return;
+            }
+
+            // ---!!! THIS IS THE FIX !!!---
+            // Reset all counters and UI for the new session
+            alertCounter = 0;
+            isAlertCooldown = false;
+            warningCountEl.textContent = "0 / 5";
+            warningCountEl.className = 'status-box-item'; // Reset color
+            log.innerHTML = ''; // Clear the log
+            scoreEl.textContent = '---'; // Reset score
+            scoreEl.className = 'score-focused'; // Reset score color
+            // ---!!! END OF FIX !!!---
+
+            btnStart.disabled = true;
+            showStatus("Connecting...", false);
+
+            // 1. Start Webcam
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480 }, 
+                    audio: false 
+                });
+                video.srcObject = localStream;
+                await video.play();
+            } catch (err) {
+                console.error("Failed to get webcam:", err);
+                showStatus("Webcam Error", false);
+                btnStart.disabled = false;
+                return;
+            }
+
+            // 2. Connect to WebSocket
+            try {
+                socket = new WebSocket(WEBSOCKET_URL);
+                socket.binaryType = 'blob';
+
+                // Assign event handlers
+                socket.onopen = onSocketOpen;
+                socket.onmessage = onSocketMessage;
+                socket.onclose = onSocketClose;
+                socket.onerror = onSocketError;
+            } catch (err) {
+                console.error("Failed to connect to WebSocket:", err);
+                showStatus("Server Error", false);
+                stopWebcam();
+                btnStart.disabled = false;
+            }
+        }
+
+        function endSession(isGraceful) {
+            if (proctoringInterval) {
+                clearInterval(proctoringInterval);
+                proctoringInterval = null;
+            }
+            if (socket) {
+                if (isGraceful) {
+                    try {
+                        socket.send(JSON.stringify({ event: "END_SESSION" }));
+                    } catch (e) {
+                         console.warn("Could not send END_SESSION, socket already closed.");
+                    }
+                }
+                socket.close();
+                socket = null;
+            }
+            stopWebcam();
+
+            btnStart.disabled = false;
+            btnEnd.disabled = true;
+            showStatus("Disconnected", false);
+            
+            if (isGraceful) {
+                logEvent({ event: "SESSION_ENDED", message: "You have ended the test." });
+            }
+        }
+
+        // --- Utility Functions ---
+
+        function stopWebcam() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+                video.srcObject = null;
+            }
+        }
+
+        function showStatus(message, isConnected) {
+            statusEl.textContent = message;
+            if (isConnected) {
+                statusEl.classList.add('connected');
+            } else {
+                statusEl.classList.remove('connected');
+            }
+        }
+
+        function logEvent(data) {
+            // Do not log "ATTENTION_UPDATE" events, they are too noisy
+            if (data.event === "ATTENTION_UPDATE") return;
+
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            let icon = '🔔';
+            let level = 'info';
+
+            const warningEvents = [
+                'PHONE_DETECTED', 
+                'FACE_NOT_FOUND', 
+                'MULTIPLE_FACES', 
+                'LOOKING_AWAY', 
+                'UNAUTHORIZED_PERSON',
+                'ERROR'
+            ];
+            
+            const isWarning = warningEvents.includes(data.event);
+
+            // --- COOLDOWN LOGIC ---
+            if (isWarning && isAlertCooldown) {
+                console.log("Alert ignored due to cooldown:", data.event);
+                return; // Do not log this event
+            }
+            // --- END COOLDOWN LOGIC ---
+
+            if (isWarning) {
+                level = 'warning';
+                icon = '⚠️';
+
+                // --- COOLDOWN LOGIC ---
+                isAlertCooldown = true;
+                setTimeout(() => {
+                    isAlertCooldown = false;
+                    console.log("Alert cooldown finished.");
+                }, 5000); // 5000ms = 5 seconds
+                // --- END COOLDOWN LOGIC ---
+                
+                // Only increment if the test is still active
+                if (alertCounter < 5) {
+                    alertCounter++;
+                    warningCountEl.textContent = `${alertCounter} / 5`;
+                    
+                    if (alertCounter >= 3) {
+                        warningCountEl.classList.add('warning-critical');
+                    } else if (alertCounter >= 1) {
+                         warningCountEl.classList.add('warning-active');
+                    }
+                }
+            }
+            // --- END MODIFIED LOGIC ---
+
+            if (data.event === 'AUTHORIZED') level = 'success';
+            if (data.event === 'ERROR') level = 'error';
+            if (data.event === 'SESSION_ENDED') level = 'info';
+
+            entry.classList.add(`log-${level}`);
+            entry.innerHTML = `
+                <span class="log-icon">${icon}</span>
+                <div class="log-content">
+                    <strong>${data.event}</strong>
+                    <span>${data.message || ''}</span>
+                </div>
+                <span class="log-time">${timestamp}</span>
+            `;
+            log.prepend(entry);
+
+            if (alertCounter >= 5) {
+                const finalWarning = { event: 'WARNING', message: 'Test ended due to excessive alerts.' };
+                const finalEntry = document.createElement('div');
+                finalEntry.className = 'log-entry log-error';
+                finalEntry.innerHTML = `
+                    <span class="log-icon">🚫</span>
+                    <div class="log-content">
+                        <strong>${finalWarning.event}</strong>
+                        <span>${finalWarning.message}</span>
+                    </div>
+                    <span class="log-time">${new Date().toLocaleTimeString()}</span>
+                `;
+                log.prepend(finalEntry);
+                endSession(false);
+            }
+        }
+
+        function updateAttentionScore(score, label) {
+            scoreEl.textContent = `${score} - ${label}`;
+            scoreEl.className = 'status-box-item'; // Clear existing classes
+            if (label === 'Focused') {
+                scoreEl.classList.add('score-focused');
+            } else if (label === 'Distracted') {
+                scoreEl.classList.add('score-distracted');
+            } else {
+                scoreEl.classList.add('score-away');
+            }
+        }
+
+        // --- WebSocket Handlers ---
+
+        function onSocketOpen(event) {
+            showStatus("Connected", true);
+            logEvent({ event: "SYSTEM", message: "Connected to server. Authenticating..." });
+            captureAndSendFrame();
+        }
+
+        function onSocketMessage(event) {
+            let data;
+            try {
+                data = JSON.parse(event.data);
+            } catch (e) {
+                logEvent({ event: 'ERROR', message: 'Received unreadable message from server.' });
+                return;
+            }
+
+            // Handle different event types
+            if (data.event === 'ATTENTION_UPDATE') {
+                updateAttentionScore(data.score, data.label);
+            } else if (data.event === 'AUTHORIZED') {
+                logEvent(data); // Log "AUTHORIZED"
+                btnEnd.disabled = false; // Enable the "End Test" button
+                startProctoringStream(); // Start sending frames
+            } else {
+                // This now handles all other events
+                logEvent(data);
+            }
+        }
+
+        function onSocketClose(event) {
+            showStatus("Disconnected", false);
+            if (event.code !== 1000) { // 1000 = normal closure
+                logEvent({ event: 'ERROR', message: `Server connection lost (Code: ${event.code})` });
+            }
+            endSession(false);
+        }
+
+        function onSocketError(event) {
+            console.error("WebSocket Error:", event);
+            logEvent({ event: 'ERROR', message: 'A WebSocket error occurred.' });
+            endSession(false);
+        }
+
+        // --- Frame Capturing ---
+
+        function startProctoringStream() {
+            if (proctoringInterval) clearInterval(proctoringInterval);
+            
+            proctoringInterval = setInterval(() => {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    captureAndSendFrame();
+                } else {
+                    clearInterval(proctoringInterval);
+                }
+            }, 2000); // Send frame every 2000ms
+        }
+        
+        function captureAndSendFrame() {
+            if (!localStream || video.readyState < video.HAVE_CURRENT_DATA) {
+                return; // Video not ready
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            
+            context.translate(canvas.width, 0);
+            context.scale(-1, 1);
+            
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(blob);
+                }
+            }, 'image/jpeg', 0.8); // 80% quality
+        }
+
+    </script>
+</body>
+</html>
+
