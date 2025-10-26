@@ -1,0 +1,21 @@
+# Ignore everything by default
+/*
+
+# Don't ignore the .gitignore itself
+!/.gitignore
+
+# Keep the backend, frontend and websocket folders (and all their contents)
+!/backend/
+!/backend/**
+!/frontend/
+!/frontend/**
+!/websocket/
+!/websocket/**
+
+# Do not ignore any README.md files anywhere in the tree
+!**/README.md
+
+# Ensure websocket __pycache__ is ignored even though /websocket/ was un-ignored above
+/websocket/__pycache__/
+/websocket/__pycache__/**
+
